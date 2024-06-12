@@ -9,6 +9,9 @@ TagManager:
   - Bonus
   - Flag
   - LastFlag
+  - Rock
+  - BlueFlag
+  - PinkFlag
   layers:
   - Default
   - TransparentFX

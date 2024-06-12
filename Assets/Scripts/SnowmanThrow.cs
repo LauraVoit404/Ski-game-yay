@@ -1,44 +1,84 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections;
 
 public class SnowmanThrow : MonoBehaviour
 {
-    public GameObject snowBall;
-    public float throwDistance;
-    public int throwSpeed;
-    private bool justThown = false;
+    public float throwSpeed = 10f;
+    private bool justThrown = false;
+    private ObjectPool objectPool; // Reference to the ObjectPool component in the scene
+    private Transform playerTransform; // Reference to the player's transform
 
-    // Start is called before the first frame update
     void Start()
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-       GameObject target = GameObject.Find("Player");
-       
-       float distanceToTarget = Vector3.Distance(target.transform.position, transform.position);
-
-        if (distanceToTarget < throwDistance&&justThown==false)
+        objectPool = FindObjectOfType<ObjectPool>(); // Find the ObjectPool component in the scene
+        if (objectPool == null)
         {
-            justThown = true;
-            GameObject tempSnowBall = Instantiate(snowBall,transform.position,transform.rotation);
-            Rigidbody tempRb = tempSnowBall.GetComponent<Rigidbody>();
-            Vector3 targetDirection =  Vector3.Normalize(target.transform.position-transform.position);
-            
-            //Add a small throw angle
-            targetDirection += new Vector3(0, 0.33f, 0);
-            tempRb.AddForce(targetDirection * throwSpeed);
-            Invoke("ThrowOver", 0.1f);
+            Debug.LogError("ObjectPool component not found in the scene!");
         }
 
+        // Find the player's transform
+        GameObject player = GameObject.FindWithTag("Player");
+        if (player != null)
+        {
+            playerTransform = player.transform;
+        }
+        else
+        {
+            Debug.LogError("Player not found!");
+        }
     }
 
-    void ThrowOver()
+    void Update()
     {
-        justThown = false;
+        if (!justThrown && playerTransform != null)
+        {
+            ThrowSnowball();
+        }
+    }
+
+    void ThrowSnowball()
+    {
+        justThrown = true;
+        
+        // Get a snowball from the pool
+        GameObject tempSnowBall = objectPool.GetPooledObject();
+        if (tempSnowBall == null)
+        {
+            Debug.LogError("No snowball available in the pool!");
+            justThrown = false;
+            return;
+        }
+
+        // Calculate direction towards the player
+        Vector3 targetDirection = (playerTransform.position - transform.position).normalized;
+
+        // Set position, rotation, and activate snowball
+        tempSnowBall.transform.position = transform.position;
+        tempSnowBall.transform.rotation = Quaternion.LookRotation(targetDirection);
+        tempSnowBall.SetActive(true);
+
+        // Get the Rigidbody component of the snowball
+        Rigidbody tempRb = tempSnowBall.GetComponent<Rigidbody>();
+        if (tempRb != null)
+        {
+            // Apply force towards the player
+            tempRb.AddForce(targetDirection * throwSpeed, ForceMode.Impulse);
+            Debug.Log("Snowball thrown towards player!");
+        }
+        else
+        {
+            Debug.LogError("Rigidbody component missing on snowball!");
+            justThrown = false;
+            return;
+        }
+
+        // Reset justThrown after a delay
+        StartCoroutine(ResetThrownStatus());
+    }
+
+    IEnumerator ResetThrownStatus()
+    {
+        yield return new WaitForSeconds(0.1f);
+        justThrown = false;
     }
 }
