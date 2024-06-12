@@ -1,0 +1,5 @@
+sceneSetups:
+- path: Assets/Scenes/SkiGame_Couse3_Session4_Optimization.unity
+  isLoaded: 1
+  isActive: 1
+  isSubScene: 0
